@@ -94,6 +94,7 @@ static bool raise_pressed = false;
 static uint16_t raise_pressed_time = 0;
 static bool sp_num_pressed = false;
 static uint16_t sp_num_pressed_time = 0;
+static uint8_t mod_state;
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
@@ -146,11 +147,31 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
             return false;
             break;
+        // Enabling to input ':' by cancelling shift mod state
+        case JP_COLN: {
+            static bool colkey_registered;
+            mod_state = get_mods();
+            if (record->event.pressed) {
+                if (mod_state & MOD_MASK_SHIFT) {
+                    del_mods(MOD_MASK_SHIFT);
+                    register_code(JP_COLN);
+                    colkey_registered = true;
+                    set_mods(mod_state);
+                    return false;
+                } else {
+                    if (colkey_registered) {
+                        unregister_code(JP_COLN);
+                        colkey_registered = false;
+                        return false;
+                    }
+                }
+            }
+        }
         default:
             if (record->event.pressed) {
                 // reset the flags
-                lower_pressed = false;
-                raise_pressed = false;
+                lower_pressed  = false;
+                raise_pressed  = false;
                 sp_num_pressed = false;
             }
             break;
